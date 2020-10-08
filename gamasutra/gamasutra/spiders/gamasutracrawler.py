@@ -1,5 +1,6 @@
 import scrapy
 import os
+import shutil
 
 
 class GamasutraSpider(scrapy.Spider):
@@ -8,7 +9,7 @@ class GamasutraSpider(scrapy.Spider):
 
     def start_requests(self):
         url = self.main_address + '/updates?page='
-        for i in range(1, 2):
+        for i in range(1, 500):
             temp_url = url + str(i)
             yield scrapy.Request(url=temp_url, callback=self.parse)
 
@@ -20,9 +21,15 @@ class GamasutraSpider(scrapy.Spider):
             if cur_url[0] == '/':
                 cur_url = self.main_address + cur_url
 
-            page_name = response.url.split("/")[-1].replace('?', '').replace('=', '')
-            filename = 'test-%s.html' % page_name
-            with open(filename, 'wb') as f:
-                f.write(response.body)
+            print("getting : " + cur_url)
+            yield scrapy.Request(url=cur_url, callback=self.parse_article)
 
-            print(cur_url)
+
+
+    def parse_article(self, response):
+        page_name = response.url.split("/")[-1].replace('?', '').replace('=', '').replace('.php', '')
+        filename = 'raw-%s.html' % page_name
+        print("saving : " + filename)
+        with open(filename, 'wb') as f:
+            f.write(response.body)
+        shutil.move(filename, './saved/' + filename)
